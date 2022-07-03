@@ -1,4 +1,5 @@
 # Sudoku Design Spec
+
 ## TEAM ECHO, Qaisar Nawaz, Stefel Smith, Daniel Westphal, Guhui Zhang
 
 ## User Interface
@@ -54,7 +55,7 @@ The solver outputs one possible solution to the puzzle in the text format specif
 
 1. `main`, validates arguments and determines mode
 2. `solve`, solve the given sudoku by calling `grid_solve`
-4. `​​create`, generates a random sudoku by calling `grid_generate`
+3. `​​create`, generates a random sudoku by calling `grid_generate`
 
 ## Pseudo Code
 
