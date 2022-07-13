@@ -1,36 +1,58 @@
 import sys
+from math import sqrt
 import tkinter as tk
 from tkinter.messagebox import showerror
 from tkinter import ttk, font
 from tkmacosx import Button, Radiobutton
+# from PIL import Image, ImageTk
+sys.path.insert(0, '../lib')
+from grid import *
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        #   declare style variable
+        self.s = ttk.Style()
+        #   assume that classic theme in use
+        self.s.theme_use('classic')
+
+        self.n = 0
+        self.mode = ""
 
         self.title('Sudoku game & solver')
+        self.config(bg="white")
 
         # button configs for later use
         self.button_options = dict(fg="white", bg="darkblue", overbackground="lightslategray", overforeground="white",
                               activebackground="darkblue", activeforeground="white", cursor="hand")
 
-        window_width = 600
-        window_height = 600
+        self.window_width = 600
+        self.window_height = 600
         # get the screen dimension
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
 
         # find the center point
-        center_x = int(screen_width/2 - window_width / 2)
-        center_y = int(screen_height/2 - window_height / 2)
+        center_x = int(screen_width/2 - self.window_width / 2)
+        center_y = int(screen_height/2 - self.window_height / 2)
 
         # set the position of the window to the center of the screen
-        self.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
+        self.geometry(f'{self.window_width}x{self.window_height}+{center_x}+{center_y}')
 
         self.resizable(False, False)
+
+        # set image icon
         self.tk.call("wm", "iconphoto", self._w,
                      tk.PhotoImage(file="/Users/zhangguhui/CsCode/CS50/labs/my_sudoku/images/main_icon.gif"))
+
+        # set background image
+        bg_image = tk.PhotoImage(file="/Users/zhangguhui/CsCode/CS50/labs/my_sudoku/images/bg3.gif")
+        bg_image = bg_image.subsample(4, 4)
+        bg_label = tk.Label(self, image=bg_image)
+        bg_label.grid(row=0, column=0) #place(x=0, y=0, relwidth=1, relheight=1)
+        bg_label.image = bg_image
+
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
@@ -45,6 +67,7 @@ class App(tk.Tk):
         :param frame_name: name of frame (key) in self.frames
         :return: none
         """
+        self.frames[frame_name].update()
         self.frames[frame_name].tkraise()
 
 
@@ -53,7 +76,9 @@ class StartFrame(tk.Frame):
         super().__init__(container)
 
         self.controller = controller
+        self.mode = ""
 
+        self.config(bg="white")
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
@@ -75,7 +100,7 @@ class StartFrame(tk.Frame):
         blank.grid(row=3, column=0, padx=5, pady=5)
 
         # solver button and explanation
-        solver_button_exp = tk.Label(self, text="Input a sudoku puzzle and see how it is solved!", fg="#202020",
+        solver_button_exp = tk.Label(self, text="Input a sudoku puzzle \nand see how it is solved!", fg="#202020",
                                      font=("herculanum", 20))
         solver_button_exp.grid(row=4, column=0, padx=5, pady=5)
         solver_button = Button(self, text="Solver", font=("herculanum", 25, "bold"),
@@ -95,6 +120,9 @@ class StartFrame(tk.Frame):
         self.grid_forget()
         self.controller.show_frame("size_frame")
 
+    def update(self):
+            pass
+
 
 class SizeFrame(tk.LabelFrame):
     def __init__(self, container, controller):
@@ -102,7 +130,7 @@ class SizeFrame(tk.LabelFrame):
 
         self.controller = controller
 
-        self.config(text="Select size", font=("herculanum", 25))
+        self.config(text="Select size", font=("herculanum", 25))#, height=self.controller.window_height, width=self.controller.window_width)
 
         self.rowconfigure(index=0, weight=1)
         self.rowconfigure(index=1, weight=1)
@@ -133,19 +161,128 @@ class SizeFrame(tk.LabelFrame):
         elif self.controller.mode == "play":
             self.controller.show_frame("play_grid_frame")
 
+    def update(self):
+        pass
+
 
 class SolverGridFrame(tk.Frame):
     def __init__(self, container, controller):
         super().__init__(container)
-
         self.controller = controller
+        self.entries = []
+        self.entry_string_vars = []
+
+        self.grid(row=0, column=0)
+
+    def update(self):
+        n = self.controller.n
+
+        # initialize StringVar
+        for i in range(self.controller.n*self.controller.n):
+            self.entry_string_vars.append(tk.StringVar())
+
+        # set up canvas
+        margin = 4
+        side = 45
+        canvas_width = canvas_height = 2 * margin + side * n
+
+        canvas = tk.Canvas(self, width=canvas_width, height=canvas_height, bg="white", highlightthickness=0)
+        canvas.grid(row=0, columnspan=2)
+
+        # draw lines
+        for i in range(n+1):
+            color = "gray"
+            lw = 1
+            if i % sqrt(n) == 0:
+                color = "darkblue"
+                lw = 2
+
+            x0 = x1 = margin + i * side  # vertical
+            y0 = margin
+            y1 = canvas_height - margin
+            canvas.create_line(x0, y0, x1, y1, fill=color, width=lw)
+
+            x0 = margin
+            y0 = y1 = margin + i * side  # horizontal
+            x1 = canvas_width - margin
+            canvas.create_line(x0, y0, x1, y1, fill=color, width=lw)
+
+        # configure relief=flat entry
+        # modified from https://stackoverflow.com/questions/44383730/how-to-get-flat-relief-entry-widget-in-python-ttk
+        s = ttk.Style()
+        s.theme_use('default')
+
+        # configure relief
+        s.configure('SOExample.TEntry', relief='flat', background="white")
+
+        s.layout('SOExample.TEntry', [
+            ('Entry.highlight', {
+                'sticky': 'nswe',
+                'children':
+                    [('Entry.border', {
+                        'border': '1',
+                        'sticky': 'nswe',
+                        'children':
+                            [('Entry.padding', {
+                                'sticky': 'nswe',
+                                'children':
+                                    [('Entry.textarea',
+                                      {'sticky': 'nswe'})]
+                            })]
+                    })]
+            })])
+
+        # draw entries
+        for i in range(n):
+            for j in range(n):
+                entry = ttk.Entry(canvas, width=2, font=("herculanum", 22), style='SOExample.TEntry', justify="center",
+                                  textvariable=self.entry_string_vars[i*n+j])
+                entry.grid(row=i, column=j)
+                canvas.create_window(margin+(i+0.5)*side, margin+(j+.5)*side, window=entry)
+                self.entries.append(entry)
+
+        self.clear_sudoku()
+
+        # solve button
+        solve_button = Button(self, text="Solve this for me", font=("herculanum", 25, "bold"),
+                              command=self.solve_sudoku, **self.controller.button_options)
+        solve_button.grid(row=1, column=0, pady=5, padx=5)
+
+        # clear button
+        clear_button = Button(self, text="Clear", font=("herculanum", 25, "bold"),
+                              command=self.clear_sudoku, **self.controller.button_options)
+        clear_button.grid(row=1, column=1, pady=5, padx=5)
+
+        self.grid(row=0, column=0)
+
+    def clear_sudoku(self):
+        n = self.controller.n
+        for i in range(n*n):
+            self.entries[i].delete(0, "end")
+            self.entries[i].insert(0, "0")
+
+    def solve_sudoku(self):
+        n = self.controller.n
+        input_grid = ' '.join([string_var.get() for string_var in self.entry_string_vars])
+        grid = Grid(n)
+        if not grid.grid_load_string(input_grid):
+            pass
+        else:
+            grid.grid_solve()
+            for i in range(n):
+                for j in range(n):
+                    self.entries[i*n+j].delete(0, "end")
+                    self.entries[i*n+j].insert(0, grid.grid_get_value(i, j))
 
 
 class PlayGridFrame(tk.Frame):
     def __init__(self, container, controller):
         super().__init__(container)
-
         self.controller = controller
+        self.grid(row=0, column=0)
+
+    def upate(self):
+        pass
 
 
 if __name__ == '__main__':

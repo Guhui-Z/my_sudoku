@@ -124,6 +124,31 @@ class Grid:
 
         return True
 
+    def grid_load_string(self, s):
+        """
+        load a grid from string
+
+        :param s: string representation of white-space separated sudoku values
+        :return: true if the grid is loaded successfully, false otherwise
+        """
+        n = self.n
+        s_split = s.split()
+        try:
+            for i in range(n):
+                for j in range(n):
+                    num = int(s_split[i*n+j])
+                    if (num > 0) and (num <= n):
+                        self.grid_set_tile(i, j, True, num)
+                    else:
+                        self.grid_set_tile(i, j, False, 0)
+
+        except Exception as e:
+            print("Invalid format of string representation of sudoku board", file=sys.stderr)
+            print(e, file=sys.stderr)
+            return False
+
+        return True
+
     def valid_digits(self, i, j):
         """
         find the potentially valid candidates of a tile
@@ -314,6 +339,15 @@ class TestGrid(unittest.TestCase):
         self.assertEqual(grid.grid_solve(), 2)
         grid.grid_random_clue()
         self.assertEqual(grid.grid_solve(), 1)
+
+    def test_load(self):
+        grid = Grid(4)
+        grid.grid_load_string("1 0 3 4 4 3 0 0 2 0 1 3 0 1 0 2")
+        self.assertEqual(grid.grid_get_value(2, 2), 1)
+        self.assertEqual(grid.grid_get_status(2, 2), True)
+        grid.grid_print()
+        self.assertEqual(grid.grid_solve(), 1)
+        grid.grid_print()
 
 
 if __name__ == '__main':
