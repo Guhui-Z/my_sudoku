@@ -56,7 +56,8 @@ class App(tk.Tk):
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
-        self.frames = {"start_frame": StartFrame(self, self), "size_frame": SizeFrame(self, self),
+        self.frames = {"start_frame": StartFrame(self, self),
+                       "size_frame": SizeFrame(self, self),
                        "solver_grid_frame": SolverGridFrame(self, self),
                        "play_grid_frame": PlayGridFrame(self, self)}
         self.show_frame("start_frame")
@@ -120,9 +121,6 @@ class StartFrame(tk.Frame):
         self.grid_forget()
         self.controller.show_frame("size_frame")
 
-    def update(self):
-            pass
-
 
 class SizeFrame(tk.LabelFrame):
     def __init__(self, container, controller):
@@ -130,7 +128,7 @@ class SizeFrame(tk.LabelFrame):
 
         self.controller = controller
 
-        self.config(text="Select size", font=("herculanum", 25))#, height=self.controller.window_height, width=self.controller.window_width)
+        self.config(text="Select size", font=("herculanum", 25))
 
         self.rowconfigure(index=0, weight=1)
         self.rowconfigure(index=1, weight=1)
@@ -161,9 +159,6 @@ class SizeFrame(tk.LabelFrame):
         elif self.controller.mode == "play":
             self.controller.show_frame("play_grid_frame")
 
-    def update(self):
-        pass
-
 
 class SolverGridFrame(tk.Frame):
     def __init__(self, container, controller):
@@ -187,14 +182,14 @@ class SolverGridFrame(tk.Frame):
         canvas_width = canvas_height = 2 * margin + side * n
 
         canvas = tk.Canvas(self, width=canvas_width, height=canvas_height, bg="white", highlightthickness=0)
-        canvas.grid(row=0, columnspan=2)
+        canvas.grid(row=1, columnspan=2)
 
         # draw lines
         for i in range(n+1):
             color = "gray"
             lw = 1
             if i % sqrt(n) == 0:
-                color = "darkblue"
+                color = "#CB6A08"
                 lw = 2
 
             x0 = x1 = margin + i * side  # vertical
@@ -246,12 +241,12 @@ class SolverGridFrame(tk.Frame):
         # solve button
         solve_button = Button(self, text="Solve this for me", font=("herculanum", 25, "bold"),
                               command=self.solve_sudoku, **self.controller.button_options)
-        solve_button.grid(row=1, column=0, pady=5, padx=5)
+        solve_button.grid(row=2, column=0, pady=5, padx=5)
 
         # clear button
         clear_button = Button(self, text="Clear", font=("herculanum", 25, "bold"),
                               command=self.clear_sudoku, **self.controller.button_options)
-        clear_button.grid(row=1, column=1, pady=5, padx=5)
+        clear_button.grid(row=2, column=1, pady=5, padx=5)
 
         self.grid(row=0, column=0)
 
@@ -266,13 +261,22 @@ class SolverGridFrame(tk.Frame):
         input_grid = ' '.join([string_var.get() for string_var in self.entry_string_vars])
         grid = Grid(n)
         if not grid.grid_load_string(input_grid):
-            pass
+            showerror(title="Error", message="Check your inputs :)")
         else:
-            grid.grid_solve()
-            for i in range(n):
-                for j in range(n):
-                    self.entries[i*n+j].delete(0, "end")
-                    self.entries[i*n+j].insert(0, grid.grid_get_value(i, j))
+            grid.grid_solve(self)
+            # for i in range(n):
+            #     for j in range(n):
+            #         self.entries[i*n+j].delete(0, "end")
+            #         self.entries[i*n+j].insert(0, grid.grid_get_value(i, j))
+
+    def insert_a_tile(self, i, j, num):
+        n = self.controller.n
+        try:
+            self.entries[i*n+j].delete(0, "end")
+            self.entries[i*n+j].insert(0, num)
+        except Exception as e:
+            print(f"Error when inserting into entry ({i}, {j})", file=sys.stderr)
+            print(e, file=sys.stderr)
 
 
 class PlayGridFrame(tk.Frame):

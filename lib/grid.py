@@ -7,6 +7,8 @@ import math
 import random
 import unittest
 from tile import *
+sys.path.insert(0, '../main')
+from sudoku_gui import *
 
 
 class Grid:
@@ -139,6 +141,8 @@ class Grid:
                     num = int(s_split[i*n+j])
                     if (num > 0) and (num <= n):
                         self.grid_set_tile(i, j, True, num)
+                    elif num > n:
+                        return False
                     else:
                         self.grid_set_tile(i, j, False, 0)
 
@@ -181,7 +185,7 @@ class Grid:
 
         return valid
 
-    def grid_solve_helper(self, i, j, sol):
+    def grid_solve_helper(self, i, j, sol, solver_grid_frame=None):
         """
         helper function for grid_solve
 
@@ -201,15 +205,20 @@ class Grid:
 
         # skip the tile if it is confirmed
         if self.grid_get_status(i, j):
-            flag, sol = self.grid_solve_helper(i+1, j, sol)
+            flag, sol = self.grid_solve_helper(i+1, j, sol, solver_grid_frame)
             return flag, sol
 
         # get valid candidates for the tile
         valid = self.valid_digits(i, j)
 
-        # if the no valid candidates, backtrack
+        # if no valid candidates, backtrack
         if len(valid) == 0:
             self.grid_set_tile(i, j, False, 0)
+
+            if solver_grid_frame is not None and sol < 1:  # draw tile
+                solver_grid_frame.after(50)
+                solver_grid_frame.controller.update()
+                solver_grid_frame.insert_a_tile(i, j, 0)
             return False, sol
 
         # randomly pick a candidate
@@ -217,12 +226,22 @@ class Grid:
         val = valid.pop(k)
         self.grid_set_tile(i, j, False, val)
 
+        if solver_grid_frame is not None and sol < 1:  # draw tile
+            solver_grid_frame.after(50)
+            solver_grid_frame.controller.update()
+            solver_grid_frame.insert_a_tile(i, j, val)
+
         # while there's no solution for the next tile, try different candidates
-        flag, sol = self.grid_solve_helper(i+1, j, sol)
+        flag, sol = self.grid_solve_helper(i+1, j, sol, solver_grid_frame)
         while not flag:
             # if the no valid candidates, backtrack
             if len(valid) == 0:
                 self.grid_set_tile(i, j, False, 0)
+
+                if solver_grid_frame is not None and sol < 1:  # draw tile
+                    solver_grid_frame.after(50)
+                    solver_grid_frame.controller.update()
+                    solver_grid_frame.insert_a_tile(i, j, 0)
                 return False, sol
 
             # randomly pick a candidate
@@ -230,20 +249,30 @@ class Grid:
             val = valid.pop(k)
             self.grid_set_tile(i, j, False, val)
 
-            flag, sol = self.grid_solve_helper(i+1, j, sol)
+            if solver_grid_frame is not None and sol < 1:  # draw tile
+                solver_grid_frame.after(50)
+                solver_grid_frame.controller.update()
+                solver_grid_frame.insert_a_tile(i, j, val)
+
+            flag, sol = self.grid_solve_helper(i+1, j, sol, solver_grid_frame)
 
         return True, sol
 
-    def grid_solve(self):
+    def grid_solve(self, solver_grid_frame=None):
         """
         solve a sudoku grid
 
         :return: 0 if no solutions are found, 1 if a unique solution is found, 2 if multiple solutions
         """
-        _, sol = self.grid_solve_helper(0, 0, 0)
+        _, sol = self.grid_solve_helper(0, 0, 0, solver_grid_frame)
+        # if solver_grid_frame is not None and sol > 0:
+        #     for i in range(self.n):
+        #         for j in range(self.n):
+        #             solver_grid_frame.insert_a_tile(i, j, self.grid_get_value(i, j))
+
         # if there's only one solution, get that solution
         if sol == 1:
-            self.grid_solve_helper(0, 0, 1)
+            self.grid_solve_helper(0, 0, 1, solver_grid_frame)
             return 1
 
         return sol
