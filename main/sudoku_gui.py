@@ -69,7 +69,6 @@ class App(tk.Tk):
         :return: none
         """
         self.frames[frame_name].update_frame()
-        self.frames[frame_name].grid()
         self.frames[frame_name].tkraise()
 
 
@@ -177,10 +176,10 @@ class SolverGridFrame(tk.Frame):
         self.grid(row=0, column=0)
 
     def update_frame(self):
-        # home button
-        home_button = Button(self, text="Home", font=("herculanum", 25, "bold"),
-                             command=self.switch_to_start_frame, **self.controller.button_options)
-        home_button.grid(row=0, columnspan=2, pady=5, padx=5)
+        # quit button
+        quit_button = Button(self, text="Quit", font=("herculanum", 22, "bold"),
+                             command=self.controller.destroy, **self.controller.button_options)
+        quit_button.grid(row=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
 
         n = self.controller.n
 
@@ -300,13 +299,6 @@ class SolverGridFrame(tk.Frame):
             print(f"Error when inserting into entry ({i}, {j})", file=sys.stderr)
             print(e, file=sys.stderr)
 
-    def switch_to_start_frame(self):
-        for widget in self.winfo_children():
-            widget.grid_remove()
-
-        self.grid_remove()
-        self.controller.show_frame("start_frame")
-
 
 class PlayGridFrame(tk.Frame):
     def __init__(self, container, controller):
@@ -315,11 +307,6 @@ class PlayGridFrame(tk.Frame):
         self.n = self.controller.n
         self.entries = []
         self.entry_string_vars = []
-
-        # # progress bar
-        # self.pb = ttk.Progressbar(self, orient="horizontal", mode="determinate", length=200)
-        # # progress bar label
-        # self.pb_label = tk.Label(self, text=self.update_progress_label(), font=("herculanum", 25))
 
         self.grid(row=0, column=0)
 
@@ -337,15 +324,11 @@ class PlayGridFrame(tk.Frame):
         :return: none
         """
         self.pb["value"] = pb_value
-        print(pb_value)
         self.pb_label["text"] = self.update_progress_label()
         self.controller.update()
 
     def update_frame(self):
         self.n = self.controller.n
-
-        label = tk.Label(self, text='haha')
-        label.grid(row=0, column=0)
 
         # progress bar
         self.pb = ttk.Progressbar(self, orient="horizontal", mode="determinate", length=200)
@@ -378,11 +361,6 @@ class PlayGridFrame(tk.Frame):
     def draw_sudoku(self):
         self.pb.destroy()
         self.pb_label.destroy()
-
-        # home button
-        home_button = Button(self, text="Home", font=("herculanum", 25, "bold"),
-                             command=self.switch_to_start_frame, **self.controller.button_options)
-        home_button.grid(row=0, columnspan=2, pady=5, padx=5)
 
         # initialize StringVar
         for i in range(self.n*self.n):
@@ -567,13 +545,6 @@ class PlayGridFrame(tk.Frame):
         i, j = self.clues.pop(temp)
         num = self.answer_grid.grid_get_value(i, j)
         self.insert_a_tile(i, j, num)
-
-    def switch_to_start_frame(self):
-        for widget in self.winfo_children():
-            widget.grid_remove()
-
-        self.grid_remove()
-        self.controller.show_frame("start_frame")
 
 
 if __name__ == '__main__':
