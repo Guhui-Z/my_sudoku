@@ -128,7 +128,7 @@ class Grid:
 
     def grid_load_string(self, s):
         """
-        load a grid from string
+        load a grid from string (row1 row2 row3 ...)
 
         :param s: string representation of white-space separated sudoku values
         :return: true if the grid is loaded successfully, false otherwise
@@ -185,27 +185,28 @@ class Grid:
 
         return valid
 
-    def grid_solve_helper(self, i, j, sol, solver_grid_frame=None):
+    def grid_solve_helper(self, i, j, sol, grid_frame=None):
         """
         helper function for grid_solve
 
         :param i: i coordinate of the tile
         :param j: j coordinate of the tile
         :param sol: number of solutions
+        :param grid_frame: the grid frame to draw on, default to none (if not in GUI)
         :return: true if a solution is found with the current tile value, false otherwise
         """
         n = self.n
-        if i >= n:
-            if j == n-1:  # reached the last tile of the grid
+        if j >= n:
+            if i == n-1:  # reached the last tile of the grid
                 sol += 1  # increment number of solutions
                 return sol > 1, sol  # done if multiple solutions found
             else:
-                j += 1
-                i = 0
+                i += 1
+                j = 0
 
         # skip the tile if it is confirmed
         if self.grid_get_status(i, j):
-            flag, sol = self.grid_solve_helper(i+1, j, sol, solver_grid_frame)
+            flag, sol = self.grid_solve_helper(i, j+1, sol, grid_frame)
             return flag, sol
 
         # get valid candidates for the tile
@@ -215,10 +216,10 @@ class Grid:
         if len(valid) == 0:
             self.grid_set_tile(i, j, False, 0)
 
-            if solver_grid_frame is not None and sol < 1:  # draw tile
-                solver_grid_frame.after(50)
-                solver_grid_frame.controller.update()
-                solver_grid_frame.insert_a_tile(i, j, 0)
+            if grid_frame is not None and sol < 1:  # draw tile
+                grid_frame.after(50)
+                grid_frame.controller.update()
+                grid_frame.insert_a_tile(i, j, 0)
             return False, sol
 
         # randomly pick a candidate
@@ -226,22 +227,22 @@ class Grid:
         val = valid.pop(k)
         self.grid_set_tile(i, j, False, val)
 
-        if solver_grid_frame is not None and sol < 1:  # draw tile
-            solver_grid_frame.after(50)
-            solver_grid_frame.controller.update()
-            solver_grid_frame.insert_a_tile(i, j, val)
+        if grid_frame is not None and sol < 1:  # draw tile
+            grid_frame.after(50)
+            grid_frame.controller.update()
+            grid_frame.insert_a_tile(i, j, val)
 
         # while there's no solution for the next tile, try different candidates
-        flag, sol = self.grid_solve_helper(i+1, j, sol, solver_grid_frame)
+        flag, sol = self.grid_solve_helper(i, j+1, sol, grid_frame)
         while not flag:
             # if the no valid candidates, backtrack
             if len(valid) == 0:
                 self.grid_set_tile(i, j, False, 0)
 
-                if solver_grid_frame is not None and sol < 1:  # draw tile
-                    solver_grid_frame.after(50)
-                    solver_grid_frame.controller.update()
-                    solver_grid_frame.insert_a_tile(i, j, 0)
+                if grid_frame is not None and sol < 1:  # draw tile
+                    grid_frame.after(50)
+                    grid_frame.controller.update()
+                    grid_frame.insert_a_tile(i, j, 0)
                 return False, sol
 
             # randomly pick a candidate
@@ -249,30 +250,25 @@ class Grid:
             val = valid.pop(k)
             self.grid_set_tile(i, j, False, val)
 
-            if solver_grid_frame is not None and sol < 1:  # draw tile
-                solver_grid_frame.after(50)
-                solver_grid_frame.controller.update()
-                solver_grid_frame.insert_a_tile(i, j, val)
+            if grid_frame is not None and sol < 1:  # draw tile
+                grid_frame.after(50)
+                grid_frame.controller.update()
+                grid_frame.insert_a_tile(i, j, val)
 
-            flag, sol = self.grid_solve_helper(i+1, j, sol, solver_grid_frame)
+            flag, sol = self.grid_solve_helper(i, j+1, sol, grid_frame)
 
         return True, sol
 
-    def grid_solve(self, solver_grid_frame=None):
+    def grid_solve(self, grid_frame=None):
         """
         solve a sudoku grid
 
+        :param grid_frame: the grid frame to draw on, default to none (if not in GUI)
         :return: 0 if no solutions are found, 1 if a unique solution is found, 2 if multiple solutions
         """
-        _, sol = self.grid_solve_helper(0, 0, 0, solver_grid_frame)
-        # if solver_grid_frame is not None and sol > 0:
-        #     for i in range(self.n):
-        #         for j in range(self.n):
-        #             solver_grid_frame.insert_a_tile(i, j, self.grid_get_value(i, j))
-
-        # if there's only one solution, get that solution
+        _, sol = self.grid_solve_helper(0, 0, 0, grid_frame)
         if sol == 1:
-            self.grid_solve_helper(0, 0, 1, solver_grid_frame)
+            self.grid_solve_helper(0, 0, 1, grid_frame)
             return 1
 
         return sol
@@ -307,7 +303,7 @@ class Grid:
                 for j in range(self.n):
                     other.grid_set_tile(i, j, self.grid_get_status(i, j), self.grid_get_value(i, j))
 
-    def grid_random_clue(self):
+    def grid_random_clue(self, pb_frame=None):
         """
         randomly set tiles to zero in a complete grid to produce a sudoku puzzle
         will do nothing if the grid is already incomplete
@@ -341,6 +337,9 @@ class Grid:
             if grid_temp.grid_solve() == 1:
                 self.grid_set_tile(i, j, False, 0)
                 empty_cnt += 1
+
+            if pb_frame is not None:
+                pb_frame.update_progress((k+1)/total_cnt*100)
 
     def grid_cmp(self, other):
         """
