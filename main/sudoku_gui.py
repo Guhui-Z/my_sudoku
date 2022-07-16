@@ -1,10 +1,10 @@
 import sys
 from math import sqrt
+import random
 import tkinter as tk
-from tkinter.messagebox import showerror
-from tkinter import ttk, font
+from tkinter.messagebox import showerror, showinfo
+from tkinter import ttk
 from tkmacosx import Button, Radiobutton
-# from PIL import Image, ImageTk
 sys.path.insert(0, '../lib')
 from grid import *
 
@@ -68,7 +68,8 @@ class App(tk.Tk):
         :param frame_name: name of frame (key) in self.frames
         :return: none
         """
-        self.frames[frame_name].update()
+        self.frames[frame_name].update_frame()
+        self.frames[frame_name].grid()
         self.frames[frame_name].tkraise()
 
 
@@ -118,8 +119,11 @@ class StartFrame(tk.Frame):
         :return: none
         """
         self.controller.mode = mode
-        self.grid_forget()
+        self.grid_remove()
         self.controller.show_frame("size_frame")
+
+    def update_frame(self):
+        pass
 
 
 class SizeFrame(tk.LabelFrame):
@@ -153,11 +157,14 @@ class SizeFrame(tk.LabelFrame):
     def switch_to_grid_frame(self):
         self.controller.n = int(self.sudoku_size_var.get())
 
-        self.grid_forget()
+        self.grid_remove()
         if self.controller.mode == "solver":
             self.controller.show_frame("solver_grid_frame")
         elif self.controller.mode == "play":
             self.controller.show_frame("play_grid_frame")
+
+    def update_frame(self):
+        pass
 
 
 class SolverGridFrame(tk.Frame):
@@ -169,28 +176,30 @@ class SolverGridFrame(tk.Frame):
 
         self.grid(row=0, column=0)
 
-    def update(self):
+    def update_frame(self):
+        # home button
+        home_button = Button(self, text="Home", font=("herculanum", 25, "bold"),
+                             command=self.switch_to_start_frame, **self.controller.button_options)
+        home_button.grid(row=0, columnspan=2, pady=5, padx=5)
+
         n = self.controller.n
 
         # initialize StringVar
-        for i in range(self.controller.n*self.controller.n):
+        for i in range(n*n):
             self.entry_string_vars.append(tk.StringVar())
 
         # set up canvas
         margin = 4
-        side = 45
+        side = 50 if n == 4 else 40
         canvas_width = canvas_height = 2 * margin + side * n
 
         canvas = tk.Canvas(self, width=canvas_width, height=canvas_height, bg="white", highlightthickness=0)
-        canvas.grid(row=1, columnspan=2)
+        canvas.grid(row=1, columnspan=2, padx=5, pady=5)
 
         # draw lines
         for i in range(n+1):
-            color = "gray"
-            lw = 1
-            if i % sqrt(n) == 0:
-                color = "#CB6A08"
-                lw = 2
+            color = "gray" if i % sqrt(n) != 0 else "#CB6A08"
+            lw = 1 if i % sqrt(n) != 0 else 2
 
             x0 = x1 = margin + i * side  # vertical
             y0 = margin
@@ -233,13 +242,13 @@ class SolverGridFrame(tk.Frame):
                 entry = ttk.Entry(canvas, width=2, font=("herculanum", 22), style='SOExample.TEntry', justify="center",
                                   textvariable=self.entry_string_vars[i*n+j])
                 entry.grid(row=i, column=j)
-                canvas.create_window(margin+(i+0.5)*side, margin+(j+.5)*side, window=entry)
+                canvas.create_window(margin+(j+0.5)*side, margin+(i+.5)*side, window=entry)
                 self.entries.append(entry)
 
         self.clear_sudoku()
 
         # solve button
-        solve_button = Button(self, text="Solve this for me", font=("herculanum", 25, "bold"),
+        solve_button = Button(self, text="Solve for me", font=("herculanum", 25, "bold"),
                               command=self.solve_sudoku, **self.controller.button_options)
         solve_button.grid(row=2, column=0, pady=5, padx=5)
 
@@ -251,25 +260,38 @@ class SolverGridFrame(tk.Frame):
         self.grid(row=0, column=0)
 
     def clear_sudoku(self):
+        """
+        clears the grid and fills it with zeros
+        :return: none
+        """
         n = self.controller.n
         for i in range(n*n):
             self.entries[i].delete(0, "end")
             self.entries[i].insert(0, "0")
 
     def solve_sudoku(self):
+        """
+        reads the grid by calling grid_load_string
+        and solves the grid by calling grid_solve
+        :return: none
+        """
         n = self.controller.n
         input_grid = ' '.join([string_var.get() for string_var in self.entry_string_vars])
-        grid = Grid(n)
-        if not grid.grid_load_string(input_grid):
+        my_grid = Grid(n)
+        if not my_grid.grid_load_string(input_grid):
             showerror(title="Error", message="Check your inputs :)")
         else:
-            grid.grid_solve(self)
-            # for i in range(n):
-            #     for j in range(n):
-            #         self.entries[i*n+j].delete(0, "end")
-            #         self.entries[i*n+j].insert(0, grid.grid_get_value(i, j))
+            if my_grid.grid_solve(self) == 0:
+                showinfo(title="Info", message="No solution found :(")
 
     def insert_a_tile(self, i, j, num):
+        """
+        inserts a number into an entry
+        :param i: i coordinate of the tile
+        :param j: j coordinate of the tile
+        :param num: the value of the tile
+        :return: none
+        """
         n = self.controller.n
         try:
             self.entries[i*n+j].delete(0, "end")
@@ -278,15 +300,280 @@ class SolverGridFrame(tk.Frame):
             print(f"Error when inserting into entry ({i}, {j})", file=sys.stderr)
             print(e, file=sys.stderr)
 
+    def switch_to_start_frame(self):
+        for widget in self.winfo_children():
+            widget.grid_remove()
+
+        self.grid_remove()
+        self.controller.show_frame("start_frame")
+
 
 class PlayGridFrame(tk.Frame):
     def __init__(self, container, controller):
         super().__init__(container)
         self.controller = controller
+        self.n = self.controller.n
+        self.entries = []
+        self.entry_string_vars = []
+
+        # # progress bar
+        # self.pb = ttk.Progressbar(self, orient="horizontal", mode="determinate", length=200)
+        # # progress bar label
+        # self.pb_label = tk.Label(self, text=self.update_progress_label(), font=("herculanum", 25))
+
         self.grid(row=0, column=0)
 
-    def upate(self):
-        pass
+    def update_progress_label(self):
+        """
+        generate the progress bar label text
+        :return: a string for the progress bar label
+        """
+        return f"Generating sudoku puzzle: {self.pb['value']:.1f}%"
+
+    def update_progress(self, pb_value):
+        """
+        update the progress bar value and the progress bar label text
+        :param pb_value: the progress bar value, given by grid.random_clue()
+        :return: none
+        """
+        self.pb["value"] = pb_value
+        print(pb_value)
+        self.pb_label["text"] = self.update_progress_label()
+        self.controller.update()
+
+    def update_frame(self):
+        self.n = self.controller.n
+
+        label = tk.Label(self, text='haha')
+        label.grid(row=0, column=0)
+
+        # progress bar
+        self.pb = ttk.Progressbar(self, orient="horizontal", mode="determinate", length=200)
+        self.pb.grid(row=0, column=0, padx=5, pady=5)
+
+        # progress bar label
+        self.pb_label = tk.Label(self, text=self.update_progress_label(), font=("herculanum", 25))
+        self.pb_label.grid(row=1, column=0, padx=5, pady=5)
+
+        self.update()
+
+        # create a grid puzzle
+        self.puzzle_grid = Grid(self.n)
+        self.puzzle_grid.grid_solve()
+
+        # save the answer to answer grid
+        self.answer_grid = Grid(self.n)
+        self.puzzle_grid.grid_copy(self.answer_grid)
+
+        # generate grid puzzle
+        self.puzzle_grid.grid_random_clue(self)
+
+        # save the clues
+        self.clues = [(i, j) for i in range(self.n) for j in range(self.n) if not self.puzzle_grid.grid_get_status(i, j)]
+
+        self.grid(row=0, column=0)
+
+        self.draw_sudoku()
+
+    def draw_sudoku(self):
+        self.pb.destroy()
+        self.pb_label.destroy()
+
+        # home button
+        home_button = Button(self, text="Home", font=("herculanum", 25, "bold"),
+                             command=self.switch_to_start_frame, **self.controller.button_options)
+        home_button.grid(row=0, columnspan=2, pady=5, padx=5)
+
+        # initialize StringVar
+        for i in range(self.n*self.n):
+            self.entry_string_vars.append(tk.StringVar())
+
+        # set up canvas
+        margin = 4
+        side = 50 if self.n == 4 else 40
+        canvas_width = canvas_height = 2 * margin + side * self.n
+
+        canvas = tk.Canvas(self, width=canvas_width, height=canvas_height, bg="white", highlightthickness=0)
+        canvas.grid(row=1, columnspan=2, padx=5, pady=5)
+
+        # draw lines
+        for i in range(self.n+1):
+            color = "gray" if i % sqrt(self.n) != 0 else "#CB6A08"
+            lw = 1 if i % sqrt(self.n) != 0 else 2
+
+            x0 = x1 = margin + i * side  # vertical
+            y0 = margin
+            y1 = canvas_height - margin
+            canvas.create_line(x0, y0, x1, y1, fill=color, width=lw)
+
+            x0 = margin
+            y0 = y1 = margin + i * side  # horizontal
+            x1 = canvas_width - margin
+            canvas.create_line(x0, y0, x1, y1, fill=color, width=lw)
+
+        # configure relief=flat entry
+        # modified from https://stackoverflow.com/questions/44383730/how-to-get-flat-relief-entry-widget-in-python-ttk
+        s = ttk.Style()
+        s.theme_use('default')
+
+        # configure relief
+        s.configure('Clue.TEntry', relief='flat', background="white", foreground="darkred")
+
+        s.layout('Clue.TEntry', [
+            ('Entry.highlight', {
+                'sticky': 'nswe',
+                'children':
+                    [('Entry.border', {
+                        'border': '1',
+                        'sticky': 'nswe',
+                        'children':
+                            [('Entry.padding', {
+                                'sticky': 'nswe',
+                                'children':
+                                    [('Entry.textarea',
+                                      {'sticky': 'nswe'})]
+                            })]
+                    })]
+            })])
+
+        s.configure('Input.TEntry', relief='flat', background="white")
+        s.layout('Input.TEntry', [
+            ('Entry.highlight', {
+                'sticky': 'nswe',
+                'children':
+                    [('Entry.border', {
+                        'border': '1',
+                        'sticky': 'nswe',
+                        'children':
+                            [('Entry.padding', {
+                                'sticky': 'nswe',
+                                'children':
+                                    [('Entry.textarea',
+                                      {'sticky': 'nswe'})]
+                            })]
+                    })]
+            })])
+
+        # draw entries
+        for i in range(self.n):
+            for j in range(self.n):
+                num = self.puzzle_grid.grid_get_value(i, j)
+                if num != 0:  # clue tile
+                    entry = ttk.Entry(canvas, width=2, font=("herculanum", 20, "underline"), style='Clue.TEntry',
+                                      justify="center", textvariable=self.entry_string_vars[i*self.n+j])
+                    entry.grid(row=i, column=j)
+                    canvas.create_window(margin+(j+0.5)*side, margin+(i+.5)*side, window=entry)
+                    entry.delete(0, "end")
+                    entry.insert(0, num)
+                    entry.config(state="readonly")
+                else:  # to be filled tile
+                    entry = ttk.Entry(canvas, width=2, font=("herculanum", 20), style='Input.TEntry', justify="center",
+                                      textvariable=self.entry_string_vars[i*self.n+j])
+
+                    entry.grid(row=i, column=j)
+                    canvas.create_window(margin+(j+0.5)*side, margin+(i+.5)*side, window=entry)
+                    entry.delete(0, "end")
+                    entry.insert(0, num)
+
+                self.entries.append(entry)
+
+        # clue button
+        clue_button = Button(self, text="Reveal a tile", font=("herculanum", 25, "bold"),
+                             command=self.reveal_clue, **self.controller.button_options)
+        clue_button.grid(row=2, column=0, pady=5, padx=5)
+
+        # clear button
+        clear_button = Button(self, text="Clear", font=("herculanum", 25, "bold"),
+                              command=self.clear_sudoku, **self.controller.button_options)
+        clear_button.grid(row=2, column=1, pady=5, padx=5)
+
+        # check button
+        check_button = Button(self, text="Check answers", font=("herculanum", 25, "bold"),
+                              command=self.check_sudoku, **self.controller.button_options)
+        check_button.grid(row=3, column=0, pady=5, padx=5)
+
+        # solve button
+        solve_button = Button(self, text="Solve for me", font=("herculanum", 25, "bold"),
+                              command=self.solve_sudoku, **self.controller.button_options)
+        solve_button.grid(row=3, column=1, pady=5, padx=5)
+
+        self.grid(row=0, column=0)
+
+    def clear_sudoku(self):
+        """
+        clears the grid and fills it with zeros
+        :return: none
+        """
+        for i in range(self.n):
+            for j in range(self.n):
+                self.entries[i*self.n+j].delete(0, "end")
+                self.entries[i*self.n+j].insert(0, self.puzzle_grid.grid_get_value(i, j))
+
+    def solve_sudoku(self):
+        """
+        reads the grid by calling grid_load_string
+        and solves the grid by calling grid_solve
+        :return: none
+        """
+        temp_grid = Grid(self.n)
+        self.puzzle_grid.grid_copy(temp_grid)
+        if temp_grid.grid_solve(self) == 0:
+                showinfo(title="Info", message="No solution found :(")
+
+    def insert_a_tile(self, i, j, num):
+        """
+        inserts a number into an entry
+        :param i: i coordinate of the tile
+        :param j: j coordinate of the tile
+        :param num: the value of the tile
+        :return: none
+        """
+        try:
+            self.entries[i*self.n+j].delete(0, "end")
+            self.entries[i*self.n+j].insert(0, num)
+        except Exception as e:
+            print(f"Error when inserting into entry ({i}, {j})", file=sys.stderr)
+            print(e, file=sys.stderr)
+
+    def check_sudoku(self):
+        """
+        checks whether the user_grid is correct
+        :return: none
+        """
+        user_grid = Grid(self.n)
+        input_grid = ' '.join([string_var.get() for string_var in self.entry_string_vars])
+        if not user_grid.grid_load_string(input_grid):
+            showerror(title="Error", message="Check your inputs :)")
+        else:
+            correct = True
+            for i in range(self.n):
+                for j in range(self.n):
+                    if user_grid.grid_get_value(i, j) != self.answer_grid.grid_get_value(i, j):
+                        self.entries[i*self.n+j].delete(0, "end")
+                        self.entries[i*self.n+j].insert(0, 0)
+                        correct = False
+
+            if correct:
+                showinfo(title="", message="Congratulations!\nYou solved the puzzle!!")
+            else:
+                showinfo(title="", message="Uh oh...\nIncorrect solution. We've kept the correct tiles. Try again!")
+
+    def reveal_clue(self):
+        """
+        randomly selects a non confirmed tile and insert into its entry
+        :return: none
+        """
+        temp = random.randint(0, len(self.clues)-1)
+        i, j = self.clues.pop(temp)
+        num = self.answer_grid.grid_get_value(i, j)
+        self.insert_a_tile(i, j, num)
+
+    def switch_to_start_frame(self):
+        for widget in self.winfo_children():
+            widget.grid_remove()
+
+        self.grid_remove()
+        self.controller.show_frame("start_frame")
 
 
 if __name__ == '__main__':
