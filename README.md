@@ -95,13 +95,13 @@ Quit program
 
 Play around with a randomly generate sudoku.
 
-![](https://github.com/Guhui-Z/my_sudoku/blob/main/new_game.gif =300x300)
+![](https://github.com/Guhui-Z/my_sudoku/blob/main/new_game.gif)
 
 ### Solver
 
 Input a sudoku and see how it is solved.
 
-![](https://github.com/Guhui-Z/my_sudoku/blob/main/solver.gif =300x300)
+![](https://github.com/Guhui-Z/my_sudoku/blob/main/solver.gif)
 
 ## Files
 
