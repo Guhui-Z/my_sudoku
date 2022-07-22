@@ -91,6 +91,18 @@ Quit program
 
 `main/sudoku_gui.py` implements a command line interface.
 
+### New Game
+
+Play around with a randomly generate sudoku.
+
+![](https://github.com/Guhui-Z/my_sudoku/blob/main/new_game.gif)
+
+### Solver
+
+Input a sudoku and see how it is solved.
+
+![](https://github.com/Guhui-Z/my_sudoku/blob/main/solver.gif)
+
 ## Files
 
 `lib/` contains modules used by the sudoku program
