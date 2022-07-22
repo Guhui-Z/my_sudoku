@@ -1,6 +1,11 @@
 """
-The sudoku program using the command line
+The sudoku program using the command line as user interface
+Usage: python sudoku.py [mode]
+[mode] can be create, solver or play
+
+Guhui Zhang, 2022
 """
+
 import sys
 sys.path.insert(0, '../lib')
 import random
@@ -9,6 +14,12 @@ from grid import *
 
 
 def get_sudoku_size():
+    """
+    reads the size of the sudoku from stdin,
+    checks whether the number is a positive perfect square integer
+
+    :return: the inputted size of the sudoku; -1 if the number is invalid
+    """
     try:
         n = int(input('Enter the size of the sudoku (4, 9, 16, ...): '))
     except Exception as e:
@@ -25,27 +36,37 @@ def get_sudoku_size():
 
 
 def play_grid(n, grid_answer, grid_puzzle, grid_user):
+    """
+    implements the play mode
+
+    :param n: the size of the sudku
+    :param grid_answer: the grid containing the answer to the sudoku puzzle
+    :param grid_puzzle: the grid containing the sudoku puzzle
+    :param grid_user: the grid containing the user input to the puzzle
+    :return: none
+    """
     empty_cnt = grid_puzzle.grid_empty_cnt()
     wrong_cnt = empty_cnt
     print(f'Empty tiles count: {empty_cnt}')
 
+    # stores the clues; intended for giving a clue to the user
     clues = [(i, j) for i in range(n) for j in range(n) if not grid_puzzle.grid_get_status(i, j)]
 
-    while wrong_cnt > 0:
-        while empty_cnt > 0:
+    while wrong_cnt > 0:  # while the puzzle is not correctly filled
+        while empty_cnt > 0:  # while the puzzle is not filled
             line = input("Enter your next step (row col num), or type 'clue' or 'q':")
             if line == 'q':
                 print('Quit program')
                 return
 
-            if line == 'clue':
+            if line == 'clue':  # gives a random clue and fill it in the user grid
                 temp = random.randint(0, len(clues)-1)
                 i, j = clues.pop(temp)
                 num = grid_answer.grid_get_value(i, j)
                 print(f'Clue: {i} {j} {num}')
                 grid_user.grid_set_tile(i, j, False, num)
             else:
-                try:
+                try:  # the input should be row col num
                     args = [int(arg) for arg in line.split()]
                     i = args[0]
                     j = args[1]
@@ -109,14 +130,15 @@ def play_grid(n, grid_answer, grid_puzzle, grid_user):
 
 
 argc = len(sys.argv)
-if argc != 2:
+if argc != 2:  # check number of arguments
     print('Usage: python sudoku.py mode', file=sys.stderr)
+    exit(1)
 
 if sys.argv[1] == 'create':
     print('Sudoku mode: create')
     n = get_sudoku_size()
     if n == -1:
-        exit(1)
+        exit(2)
 
     grid = Grid(n)
     grid.grid_solve()
@@ -127,11 +149,11 @@ elif sys.argv[1] == 'solver':
     print('Sudoku mode: solver')
     n = get_sudoku_size()
     if n == -1:
-        exit(1)
+        exit(2)
 
     grid = Grid(n)
     if not grid.grid_load():
-        exit(2)
+        exit(3)
 
     sol = grid.grid_solve()
     if sol == 0:
@@ -157,4 +179,4 @@ elif sys.argv[1] == 'play':
 
 else:
     print('Unknown mode. Mode can be solver or create or play', file=sys.stderr)
-    exit(3)
+    exit(4)

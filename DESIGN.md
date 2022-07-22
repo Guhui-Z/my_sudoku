@@ -1,6 +1,8 @@
 # Sudoku Design Spec
 
-## TEAM ECHO, Qaisar Nawaz, Stefel Smith, Daniel Westphal, Guhui Zhang
+## Modified by Guhui 
+
+Based on the version by TEAM ECHO (Qaisar Nawaz, Stefel Smith, Daniel Westphal, Guhui Zhang)
 
 ## User Interface
 
@@ -16,7 +18,7 @@ The creator has no inputs besides command-line arguments.
 The creator outputs a randomly generated sudoku in the text format specified below.
 
 - The sudoku must have a unique solution.
-- The sudoku must have at least 40 missing numbers.
+- The sudoku must have at least 40 missing numbers for a 9 by 9 sudoku.
 
 ### The solver
 
@@ -31,31 +33,33 @@ The solver outputs one possible solution to the puzzle in the text format specif
 
 ## Functional Decomposition Into Modules
 
-### struct tile
+### class Tile
 
-1. `tile_new`, initializes a new tile struct, containing the integer value of the tile and a boolean indicating whether the integer value is confirmed
+1. `__init__`, initializes a new tile, containing the integer value of the tile and a boolean indicating whether the integer value is confirmed
 2. `tile_print`, prints the value of the tile
 3. `tile_set`, set the value and boolean of the tile
-4. `tile_delete`, delete a tile
-5. `tile_value`, return the value of the tile
-6. `tile_status`, return the boolean of the tile
+4. `tile_value`, return the value of the tile
+5. `tile_status`, return the boolean of the tile
 
-### struct grid
+### class Grid
 
-1. `grid_new`, initializes a new grid struct, containing a 2D array of tiles
-2. `grid_delete`, deletes a grid
-3. `grid_print`, prints a grid according to the text format specified above
-4. `grid_load`, loads a grid from input according to the text format specified above
+1. `__init__`, initializes a new Grid, containing a 2D array of tiles
+2. `grid_print`, prints a grid according to the text format specified above
+3. `grid_load`, loads a grid from stdin according to the text format specified above
+4. `grid_laod_string`, loads a grid from a string in the format `a_11, a_12, ..., a_19, a_21, a_22, ...`
 5. `grid_solve`, finds solutions to a grid (sudoku) by calling grid_solve_helper
 6. `grid_solve_helper`, recursively finds solutions to a grid (sudoku) through DFS
 7. `valid_digits`, creates a bag storing the possible candidates for a tile in the grid (sudoku)
-8. `grid_generate`, generates a random sudoku and calls `grid_solve` to determine if the sudoku has a unique solution
+8. `grid_random_clue`, generates a random sudoku and calls `grid_solve` to determine if the sudoku has a unique solution
+9. `grid_set_tile`, `grid_get_value`, `grid_get_status`, setter and getter methods
+10. `grid_copy`, copies a grid to another grid
+11. `grid_cmp`, compares the values of a grid to those of another grid
 
-### sudoku.c
+### sudoku.py
 
 1. `main`, validates arguments and determines mode
 2. `solve`, solve the given sudoku by calling `grid_solve`
-3. `​​create`, generates a random sudoku by calling `grid_generate`
+3. `create`, generates a random sudoku by calling `grid_generate`
 
 ## Pseudo Code
 
@@ -154,26 +158,24 @@ Return true;
 
 ## solver 
 
-1. `grid_new()` creates a new grid struct to pass into the following modules
-2. `grid_load()`  takes in the initialized grid_t* and stores the entries entered in from stdin 
+1. creates a new grid to pass into the following modules
+2. `grid_load()`  takes in the initialized grid and stores the entries entered in from stdin 
 3. `grid_print()` displays the grid to the user, taking in the created grid from `grid_new()`
 4. `grid_solve()` solves the grid using the following helpers
 
-    - We create a bag_t* `valid` struct storing the possible valid integers that can be in the tile
-    - We pass the bag into `get_random_valid` to choose a random possible integer to store in the value member for that tile_t* struct
-    
-5. We pass the grid into grid_delete() to clear the memory once the game is over. 
+    - We create a list storing the possible valid integers that can be in the tile
+    - Then we choose a random possible integer from the list for that tile
 	
 ## creator 
 
-1. `grid_new()` creates a new grid struct to pass into the following modules
-2. `grid_generate()` takes in the initialized grid_t* and fills it with a randomly generated sudoku with a unique solution
+1. creates a new grid to pass into the following modules
+2. `grid_generate()` takes in the initialized grid and fills it with a randomly generated sudoku with a unique solution
 3. `grid_print()` outputs the grid to the user
 
 ## Major data structures
 
-1. struct `grid` which stores the 2D array representing the sudoku, along with key functions including `grid_load()`, `grid_print()`, `grid_solve()`,  `grid_generate()` and `grid_delete()`
-2. `struct tile` which stores a boolean `solved` and an integer value representing the value at that tile
+1. class `Grid` which stores the 2D array representing the sudoku, along with key functions including `grid_load()`, `grid_print()`, `grid_solve()` and `grid_random_clue()`
+2. class `Tile` which stores a boolean `confirmed` and an integer value representing the value at that tile
 
     - 0 is used to indicate an empty slot on the board
 
@@ -188,5 +190,7 @@ Return true;
 
     1. Test with incomplete sudokus, e.g., less than 9x9
     2. Test with sudokus with non-numbers, e.g. letters and special characters
-    3. Test with sudokus with one solution by checking the return value of solver in a testing C script
-    4. Test with sudokus with multiple solutions by checking the return value of solver in a testing C script
+    3. Test with sudokus with one solution by checking the return value of solver
+    4. Test with sudokus with multiple solutions by checking the return value of solver
+   
+3. Unit test for each class

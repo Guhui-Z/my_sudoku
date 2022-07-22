@@ -1,5 +1,7 @@
 """
 Implements functions related to numbers
+
+Guhui Zhang, 2022
 """
 
 import math

@@ -2,8 +2,9 @@
 tile module
 a *tile* is a component of a grid
 containing an integer and a boolean indicating if that tile is confirmed to be correct
-"""
 
+Guhui Zhang, 2022
+"""
 
 class Tile:
     def __init__(self):

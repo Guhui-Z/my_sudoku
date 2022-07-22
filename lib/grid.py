@@ -1,7 +1,10 @@
 """
 grid module
 a *grid* is a NxN 2d array of tiles used to represent a sudoku
+
+Guhui Zhang, 2022
 """
+
 import sys
 import math
 import random
@@ -220,6 +223,7 @@ class Grid:
                 grid_frame.after(50)
                 grid_frame.controller.update()
                 grid_frame.insert_a_tile(i, j, 0)
+
             return False, sol
 
         # randomly pick a candidate
@@ -243,6 +247,7 @@ class Grid:
                     grid_frame.after(50)
                     grid_frame.controller.update()
                     grid_frame.insert_a_tile(i, j, 0)
+
                 return False, sol
 
             # randomly pick a candidate
@@ -268,7 +273,7 @@ class Grid:
         """
         _, sol = self.grid_solve_helper(0, 0, 0, grid_frame)
         if sol == 1:
-            self.grid_solve_helper(0, 0, 1, grid_frame)
+            self.grid_solve_helper(0, 0, 1)
             return 1
 
         return sol
@@ -343,7 +348,7 @@ class Grid:
 
     def grid_cmp(self, other):
         """
-        compare the value of two grids
+        compare the values of two grids
 
         :param other: the other grid
         :return: true if the values are the same, false otherwise

@@ -1,3 +1,9 @@
+"""
+The sudoku program with GUI
+
+Guhui Zhang, 2022
+"""
+
 import sys
 from math import sqrt
 import random
@@ -494,6 +500,10 @@ class PlayGridFrame(tk.Frame):
         :return: none
         """
         temp_grid = Grid(self.n)
+        self.puzzle_grid.grid_copy(temp_grid)
+        temp_grid.grid_print()
+        temp_grid.grid_solve()
+        temp_grid.grid_print()
         self.puzzle_grid.grid_copy(temp_grid)
         if temp_grid.grid_solve(self) == 0:
                 showinfo(title="Info", message="No solution found :(")
